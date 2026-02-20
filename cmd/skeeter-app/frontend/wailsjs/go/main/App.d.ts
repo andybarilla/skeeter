@@ -7,6 +7,8 @@ export function AddRepo(arg1:main.RepoEntry):Promise<void>;
 
 export function AssignTask(arg1:string,arg2:string):Promise<task.Task>;
 
+export function BrowseDirectory():Promise<string>;
+
 export function CreateTask(arg1:main.CreateTaskInput):Promise<task.Task>;
 
 export function GetActiveRepoName():Promise<string>;

@@ -10,6 +10,10 @@ export function AssignTask(arg1, arg2) {
   return window['go']['main']['App']['AssignTask'](arg1, arg2);
 }
 
+export function BrowseDirectory() {
+  return window['go']['main']['App']['BrowseDirectory']();
+}
+
 export function CreateTask(arg1) {
   return window['go']['main']['App']['CreateTask'](arg1);
 }

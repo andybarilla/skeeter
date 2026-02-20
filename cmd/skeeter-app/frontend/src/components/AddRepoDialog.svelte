@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AddRepo } from '../../wailsjs/go/main/App';
+  import { AddRepo, BrowseDirectory } from '../../wailsjs/go/main/App';
   import { refreshRepos } from '../lib/stores/repos';
   import { refreshBoard } from '../lib/stores/board';
   import { notify, notifyError } from '../lib/stores/notifications';
@@ -41,6 +41,15 @@
     }
   }
 
+  async function browse() {
+    try {
+      const selected = await BrowseDirectory();
+      if (selected) path = selected;
+    } catch (e) {
+      notifyError(e);
+    }
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') onClose();
   }
@@ -69,7 +78,10 @@
         {#if tab === 'local'}
           <div class="field">
             <label for="repo-path">Path to .skeeter directory</label>
-            <input id="repo-path" bind:value={path} placeholder="/home/user/project/.skeeter" required />
+            <div class="path-row">
+              <input id="repo-path" bind:value={path} placeholder="/home/user/project/.skeeter" required />
+              <button type="button" class="btn-secondary" on:click={browse}>Browse</button>
+            </div>
           </div>
         {:else}
           <div class="field">
@@ -170,6 +182,15 @@
 
   input:focus {
     border-color: var(--accent);
+  }
+
+  .path-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .path-row input {
+    flex: 1;
   }
 
   .actions {

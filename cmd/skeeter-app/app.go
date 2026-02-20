@@ -379,6 +379,13 @@ func (a *App) GetTemplate(name string) (string, error) {
 	return a.store.LoadTemplate(name)
 }
 
+// BrowseDirectory opens a native directory picker and returns the selected path.
+func (a *App) BrowseDirectory() (string, error) {
+	return runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title: "Select .skeeter directory",
+	})
+}
+
 // GetActiveRepoName returns the current repo name.
 func (a *App) GetActiveRepoName() string {
 	a.mu.RLock()
