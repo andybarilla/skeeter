@@ -67,6 +67,12 @@
     padding: 5px 10px;
     font-size: 13px;
     outline: none;
+    color-scheme: dark;
+  }
+
+  :global(.light) .filter-select,
+  :global(.light) .filter-input {
+    color-scheme: light;
   }
 
   .filter-select:focus, .filter-input:focus {

@@ -4,6 +4,11 @@ import { notify, notifyError } from './stores/notifications';
 
 const MIME = 'application/x-skeeter-task';
 
+// Counter-based approach: dragenter fires on every child entered,
+// dragleave fires on every child left. Counter tracks nesting depth
+// so highlight only clears when we truly leave the column.
+const enterCounts = new WeakMap<HTMLElement, number>();
+
 export function handleDragStart(e: DragEvent, taskId: string) {
   if (!e.dataTransfer) return;
   e.dataTransfer.setData(MIME, taskId);
@@ -25,21 +30,28 @@ export function handleDragOver(e: DragEvent) {
 }
 
 export function handleDragEnter(e: DragEvent) {
-  const el = (e.currentTarget as HTMLElement);
-  el.classList.add('drop-target');
+  const el = e.currentTarget as HTMLElement;
+  const count = (enterCounts.get(el) || 0) + 1;
+  enterCounts.set(el, count);
+  if (count === 1) {
+    el.classList.add('drop-target');
+  }
 }
 
 export function handleDragLeave(e: DragEvent) {
-  const el = (e.currentTarget as HTMLElement);
-  // Only remove if leaving the column itself, not a child
-  const related = e.relatedTarget as HTMLElement | null;
-  if (related && el.contains(related)) return;
-  el.classList.remove('drop-target');
+  const el = e.currentTarget as HTMLElement;
+  const count = (enterCounts.get(el) || 1) - 1;
+  enterCounts.set(el, count);
+  if (count <= 0) {
+    enterCounts.set(el, 0);
+    el.classList.remove('drop-target');
+  }
 }
 
 export async function handleDrop(e: DragEvent, targetStatus: string) {
   e.preventDefault();
-  const el = (e.currentTarget as HTMLElement);
+  const el = e.currentTarget as HTMLElement;
+  enterCounts.set(el, 0);
   el.classList.remove('drop-target');
 
   if (!e.dataTransfer) return;
