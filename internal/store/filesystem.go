@@ -240,12 +240,19 @@ func (s *FilesystemStore) autoCommit(message string, files ...string) error {
 		return nil
 	}
 
+	// Run git from the repo root (parent of .skeeter dir)
+	repoDir := filepath.Dir(s.Dir)
+
 	args := append([]string{"add"}, files...)
-	if err := exec.Command("git", args...).Run(); err != nil {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoDir
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git add: %w", err)
 	}
 
-	if err := exec.Command("git", "commit", "-m", "skeeter: "+message).Run(); err != nil {
+	cmd = exec.Command("git", "commit", "-m", "skeeter: "+message)
+	cmd.Dir = repoDir
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git commit: %w", err)
 	}
 	return nil
