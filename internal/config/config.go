@@ -61,3 +61,13 @@ func (c *Config) ValidStatus(status string) bool {
 func (c *Config) ValidPriority(priority string) bool {
 	return slices.Contains(c.Priorities, priority)
 }
+
+// PriorityRank returns the index of a priority in the configured list.
+// Lower index = higher priority. Returns len(Priorities) for unknown values.
+func (c *Config) PriorityRank(priority string) int {
+	idx := slices.Index(c.Priorities, priority)
+	if idx < 0 {
+		return len(c.Priorities)
+	}
+	return idx
+}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/andybarilla/skeeter/internal/resolve"
 	"github.com/andybarilla/skeeter/internal/store"
+	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/spf13/cobra"
 )
 
@@ -29,32 +30,35 @@ var showCmd = &cobra.Command{
 			return err
 		}
 
-		assignee := t.Assignee
-		if assignee == "" {
-			assignee = "-"
-		}
-		priority := t.Priority
-		if priority == "" {
-			priority = "-"
-		}
-
-		fmt.Printf("%s: %s\n", t.ID, t.Title)
-		fmt.Printf("Status: %s | Priority: %s | Assignee: %s\n", t.Status, priority, assignee)
-		if len(t.Tags) > 0 {
-			fmt.Printf("Tags: %s\n", strings.Join(t.Tags, ", "))
-		}
-		if len(t.Links) > 0 {
-			fmt.Printf("Links: %s\n", strings.Join(t.Links, ", "))
-		}
-		fmt.Printf("Created: %s | Updated: %s\n", t.Created, t.Updated)
-
-		if t.Body != "" {
-			fmt.Println()
-			fmt.Print(t.Body)
-		}
-
+		printTask(t)
 		return nil
 	},
+}
+
+func printTask(t *task.Task) {
+	assignee := t.Assignee
+	if assignee == "" {
+		assignee = "-"
+	}
+	priority := t.Priority
+	if priority == "" {
+		priority = "-"
+	}
+
+	fmt.Printf("%s: %s\n", t.ID, t.Title)
+	fmt.Printf("Status: %s | Priority: %s | Assignee: %s\n", t.Status, priority, assignee)
+	if len(t.Tags) > 0 {
+		fmt.Printf("Tags: %s\n", strings.Join(t.Tags, ", "))
+	}
+	if len(t.Links) > 0 {
+		fmt.Printf("Links: %s\n", strings.Join(t.Links, ", "))
+	}
+	fmt.Printf("Created: %s | Updated: %s\n", t.Created, t.Updated)
+
+	if t.Body != "" {
+		fmt.Println()
+		fmt.Print(t.Body)
+	}
 }
 
 func init() {
