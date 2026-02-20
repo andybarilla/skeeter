@@ -17,6 +17,8 @@ export function GetRepos():Promise<Array<main.RepoEntry>>;
 
 export function GetTask(arg1:string):Promise<task.Task>;
 
+export function GetTemplate(arg1:string):Promise<string>;
+
 export function MoveTask(arg1:string,arg2:string):Promise<task.Task>;
 
 export function RemoveRepo(arg1:string):Promise<void>;

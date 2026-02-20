@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CreateTask } from '../../wailsjs/go/main/App';
+  import { CreateTask, GetTemplate } from '../../wailsjs/go/main/App';
   import { refreshBoard } from '../lib/stores/board';
   import { currentConfig } from '../lib/stores/config';
   import { notify, notifyError } from '../lib/stores/notifications';
@@ -15,6 +15,10 @@
   let submitting = false;
 
   $: config = $currentConfig;
+
+  $: if (open && body === '') {
+    GetTemplate('default').then(tmpl => { body = tmpl; }).catch(() => {});
+  }
 
   function reset() {
     title = '';

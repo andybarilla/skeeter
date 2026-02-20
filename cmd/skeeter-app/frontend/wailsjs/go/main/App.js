@@ -30,6 +30,10 @@ export function GetTask(arg1) {
   return window['go']['main']['App']['GetTask'](arg1);
 }
 
+export function GetTemplate(arg1) {
+  return window['go']['main']['App']['GetTemplate'](arg1);
+}
+
 export function MoveTask(arg1, arg2) {
   return window['go']['main']['App']['MoveTask'](arg1, arg2);
 }

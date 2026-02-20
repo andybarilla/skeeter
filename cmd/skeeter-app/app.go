@@ -369,6 +369,16 @@ func (a *App) SwitchRepo(name string) error {
 	return nil
 }
 
+// GetTemplate returns the contents of a named template (e.g. "default").
+func (a *App) GetTemplate(name string) (string, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	if a.store == nil {
+		return "", fmt.Errorf("no repo selected")
+	}
+	return a.store.LoadTemplate(name)
+}
+
 // GetActiveRepoName returns the current repo name.
 func (a *App) GetActiveRepoName() string {
 	a.mu.RLock()
