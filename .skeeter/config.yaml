@@ -1,0 +1,14 @@
+project:
+    name: skeeter
+    prefix: US
+statuses:
+    - backlog
+    - ready-for-development
+    - in-progress
+    - done
+priorities:
+    - critical
+    - high
+    - medium
+    - low
+auto_commit: false
