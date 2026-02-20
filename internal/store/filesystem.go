@@ -73,6 +73,10 @@ func (s *FilesystemStore) writeDefaultTemplate() error {
 	return os.WriteFile(path, []byte(content), 0644)
 }
 
+func (s *FilesystemStore) RegenerateSkeeterMD() error {
+	return s.writeSkeeterMD()
+}
+
 func (s *FilesystemStore) writeSkeeterMD() error {
 	// Derive the "ready" status (second in list) and "done" status (last in list)
 	readyStatus := "ready-for-development"
