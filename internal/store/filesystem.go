@@ -178,6 +178,10 @@ func (s *FilesystemStore) NextID() (string, error) {
 	return id.Next(s.tasksDir(), s.Config.Project.Prefix)
 }
 
+func (s *FilesystemStore) GetConfig() *config.Config {
+	return s.Config
+}
+
 func (s *FilesystemStore) autoCommit(message string, files ...string) error {
 	if !s.Config.AutoCommit {
 		return nil

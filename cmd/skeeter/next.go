@@ -5,7 +5,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/andybarilla/skeeter/internal/resolve"
 	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/spf13/cobra"
@@ -21,15 +20,12 @@ var nextCmd = &cobra.Command{
 	Short: "Show the next available task for an agent to pick up",
 	Long:  "Returns the highest-priority unassigned task in ready-for-development status. Designed for coding agents to discover work.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := resolve.Dir(dirFlag)
+		s, err := openStore()
 		if err != nil {
 			return err
 		}
 
-		s, err := store.NewFilesystem(dir)
-		if err != nil {
-			return err
-		}
+		cfg := s.GetConfig()
 
 		tasks, err := s.List(store.Filter{Status: "ready-for-development"})
 		if err != nil {
@@ -51,8 +47,8 @@ var nextCmd = &cobra.Command{
 
 		// Sort by priority rank (lower = higher priority), then by ID
 		sort.Slice(available, func(i, j int) bool {
-			ri := s.Config.PriorityRank(available[i].Priority)
-			rj := s.Config.PriorityRank(available[j].Priority)
+			ri := cfg.PriorityRank(available[i].Priority)
+			rj := cfg.PriorityRank(available[j].Priority)
 			if ri != rj {
 				return ri < rj
 			}

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/andybarilla/skeeter/internal/resolve"
-	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -14,19 +12,15 @@ var statusCmd = &cobra.Command{
 	Short: "Change task status",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := resolve.Dir(dirFlag)
+		s, err := openStore()
 		if err != nil {
 			return err
 		}
 
-		s, err := store.NewFilesystem(dir)
-		if err != nil {
-			return err
-		}
-
+		cfg := s.GetConfig()
 		newStatus := args[1]
-		if !s.Config.ValidStatus(newStatus) {
-			return fmt.Errorf("invalid status %q (valid: %s)", newStatus, strings.Join(s.Config.Statuses, ", "))
+		if !cfg.ValidStatus(newStatus) {
+			return fmt.Errorf("invalid status %q (valid: %s)", newStatus, strings.Join(cfg.Statuses, ", "))
 		}
 
 		t, err := s.Get(strings.ToUpper(args[0]))

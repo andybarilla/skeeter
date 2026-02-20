@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/andybarilla/skeeter/internal/config"
 	"github.com/andybarilla/skeeter/internal/task"
 )
 
@@ -18,4 +19,5 @@ type Store interface {
 	Create(t *task.Task) error
 	Update(t *task.Task) error
 	NextID() (string, error)
+	GetConfig() *config.Config
 }

@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/andybarilla/skeeter/internal/resolve"
-	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/spf13/cobra"
 )
@@ -15,12 +13,7 @@ var showCmd = &cobra.Command{
 	Short: "Show task details",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := resolve.Dir(dirFlag)
-		if err != nil {
-			return err
-		}
-
-		s, err := store.NewFilesystem(dir)
+		s, err := openStore()
 		if err != nil {
 			return err
 		}

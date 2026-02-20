@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/andybarilla/skeeter/internal/resolve"
+	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/spf13/cobra"
 )
 
-var dirFlag string
+var (
+	dirFlag    string
+	remoteFlag string
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "skeeter",
@@ -24,4 +29,16 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&dirFlag, "dir", "", "path to skeeter directory (default: auto-detect .skeeter/)")
+	rootCmd.PersistentFlags().StringVar(&remoteFlag, "remote", "", "use GitHub API backend (format: owner/repo)")
+}
+
+func openStore() (store.Store, error) {
+	if remoteFlag != "" {
+		return store.NewGitHub(remoteFlag, dirFlag)
+	}
+	dir, err := resolve.Dir(dirFlag)
+	if err != nil {
+		return nil, err
+	}
+	return store.NewFilesystem(dir)
 }

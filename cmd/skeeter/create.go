@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/andybarilla/skeeter/internal/resolve"
-	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/spf13/cobra"
 )
@@ -23,24 +21,21 @@ var createCmd = &cobra.Command{
 	Short: "Create a new task",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := resolve.Dir(dirFlag)
+		s, err := openStore()
 		if err != nil {
 			return err
 		}
 
-		s, err := store.NewFilesystem(dir)
-		if err != nil {
-			return err
-		}
+		cfg := s.GetConfig()
 
-		if createPriority != "" && !s.Config.ValidPriority(createPriority) {
-			return fmt.Errorf("invalid priority %q (valid: %s)", createPriority, strings.Join(s.Config.Priorities, ", "))
+		if createPriority != "" && !cfg.ValidPriority(createPriority) {
+			return fmt.Errorf("invalid priority %q (valid: %s)", createPriority, strings.Join(cfg.Priorities, ", "))
 		}
 
 		if createStatus == "" {
-			createStatus = s.Config.Statuses[0]
-		} else if !s.Config.ValidStatus(createStatus) {
-			return fmt.Errorf("invalid status %q (valid: %s)", createStatus, strings.Join(s.Config.Statuses, ", "))
+			createStatus = cfg.Statuses[0]
+		} else if !cfg.ValidStatus(createStatus) {
+			return fmt.Errorf("invalid status %q (valid: %s)", createStatus, strings.Join(cfg.Statuses, ", "))
 		}
 
 		id, err := s.NextID()

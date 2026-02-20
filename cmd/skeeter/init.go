@@ -15,6 +15,10 @@ var initCmd = &cobra.Command{
 	Short: "Initialize skeeter in the current repository",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if remoteFlag != "" {
+			return fmt.Errorf("init is not supported for remote repositories — initialize locally and push")
+		}
+
 		dir, err := resolve.DirForInit(dirFlag)
 		if err != nil {
 			return err

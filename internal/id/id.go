@@ -17,14 +17,22 @@ func Next(tasksDir, prefix string) (string, error) {
 		return "", err
 	}
 
+	var names []string
+	for _, e := range entries {
+		if !e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+
+	return NextFromNames(names, prefix)
+}
+
+func NextFromNames(names []string, prefix string) (string, error) {
 	maxNum := 0
 	dashPrefix := prefix + "-"
 
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		name := strings.TrimSuffix(e.Name(), filepath.Ext(e.Name()))
+	for _, name := range names {
+		name = strings.TrimSuffix(name, filepath.Ext(name))
 		if !strings.HasPrefix(name, dashPrefix) {
 			continue
 		}

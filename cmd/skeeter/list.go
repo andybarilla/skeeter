@@ -5,7 +5,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/andybarilla/skeeter/internal/resolve"
 	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -18,16 +17,11 @@ var (
 )
 
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List tasks",
+	Use:     "list",
+	Short:   "List tasks",
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := resolve.Dir(dirFlag)
-		if err != nil {
-			return err
-		}
-
-		s, err := store.NewFilesystem(dir)
+		s, err := openStore()
 		if err != nil {
 			return err
 		}

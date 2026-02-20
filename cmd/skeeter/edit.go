@@ -17,6 +17,10 @@ var editCmd = &cobra.Command{
 	Short: "Open a task in your editor",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if remoteFlag != "" {
+			return fmt.Errorf("edit is not supported for remote repositories")
+		}
+
 		dir, err := resolve.Dir(dirFlag)
 		if err != nil {
 			return err
