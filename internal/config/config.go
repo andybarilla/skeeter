@@ -9,15 +9,15 @@ import (
 )
 
 type ProjectConfig struct {
-	Name   string `yaml:"name"`
-	Prefix string `yaml:"prefix"`
+	Name   string `yaml:"name" json:"name"`
+	Prefix string `yaml:"prefix" json:"prefix"`
 }
 
 type Config struct {
-	Project    ProjectConfig `yaml:"project"`
-	Statuses   []string      `yaml:"statuses"`
-	Priorities []string      `yaml:"priorities"`
-	AutoCommit bool          `yaml:"auto_commit"`
+	Project    ProjectConfig `yaml:"project" json:"project"`
+	Statuses   []string      `yaml:"statuses" json:"statuses"`
+	Priorities []string      `yaml:"priorities" json:"priorities"`
+	AutoCommit bool          `yaml:"auto_commit" json:"auto_commit"`
 }
 
 func Default() *Config {
