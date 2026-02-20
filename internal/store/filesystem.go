@@ -34,8 +34,15 @@ func (s *FilesystemStore) taskPath(taskID string) string {
 	return filepath.Join(s.tasksDir(), taskID+".md")
 }
 
+func (s *FilesystemStore) templatesDir() string {
+	return filepath.Join(s.Dir, "templates")
+}
+
 func (s *FilesystemStore) Init(projectName string) error {
 	if err := os.MkdirAll(s.tasksDir(), 0755); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(s.templatesDir(), 0755); err != nil {
 		return err
 	}
 
@@ -46,7 +53,24 @@ func (s *FilesystemStore) Init(projectName string) error {
 	}
 
 	s.Config = cfg
+
+	if err := s.writeDefaultTemplate(); err != nil {
+		return err
+	}
+
 	return s.writeSkeeterMD()
+}
+
+func (s *FilesystemStore) writeDefaultTemplate() error {
+	content := `## Acceptance Criteria
+
+- [ ]
+
+## Context
+
+`
+	path := filepath.Join(s.templatesDir(), "default.md")
+	return os.WriteFile(path, []byte(content), 0644)
 }
 
 func (s *FilesystemStore) writeSkeeterMD() error {
@@ -180,6 +204,18 @@ func (s *FilesystemStore) NextID() (string, error) {
 
 func (s *FilesystemStore) GetConfig() *config.Config {
 	return s.Config
+}
+
+func (s *FilesystemStore) LoadTemplate(name string) (string, error) {
+	path := filepath.Join(s.templatesDir(), name+".md")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", fmt.Errorf("template %q not found (looked in %s)", name, s.templatesDir())
+		}
+		return "", err
+	}
+	return string(data), nil
 }
 
 func (s *FilesystemStore) autoCommit(message string, files ...string) error {

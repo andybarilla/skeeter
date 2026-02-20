@@ -299,3 +299,12 @@ func (s *GitHubStore) NextID() (string, error) {
 
 	return id.NextFromNames(names, s.cfg.Project.Prefix)
 }
+
+func (s *GitHubStore) LoadTemplate(name string) (string, error) {
+	path := s.dir + "/templates/" + name + ".md"
+	data, _, err := s.getFileContent(path)
+	if err != nil {
+		return "", fmt.Errorf("template %q not found in remote repository", name)
+	}
+	return string(data), nil
+}

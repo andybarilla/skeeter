@@ -20,4 +20,5 @@ type Store interface {
 	Update(t *task.Task) error
 	NextID() (string, error)
 	GetConfig() *config.Config
+	LoadTemplate(name string) (string, error)
 }

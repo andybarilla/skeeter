@@ -10,10 +10,12 @@ import (
 )
 
 var (
-	createPriority string
-	createTags     string
-	createAssignee string
-	createStatus   string
+	createPriority   string
+	createTags       string
+	createAssignee   string
+	createStatus     string
+	createTemplate   string
+	createNoTemplate bool
 )
 
 var createCmd = &cobra.Command{
@@ -52,6 +54,23 @@ var createCmd = &cobra.Command{
 			}
 		}
 
+		body := ""
+		if !createNoTemplate {
+			tmplName := createTemplate
+			if tmplName == "" {
+				tmplName = "default"
+			}
+			tmplBody, err := s.LoadTemplate(tmplName)
+			if err != nil {
+				// If using default template and it doesn't exist, silently use empty body
+				if createTemplate != "" {
+					return err
+				}
+			} else {
+				body = tmplBody
+			}
+		}
+
 		t := &task.Task{
 			ID:       id,
 			Title:    args[0],
@@ -61,7 +80,7 @@ var createCmd = &cobra.Command{
 			Tags:     tags,
 			Created:  now,
 			Updated:  now,
-			Body:     "",
+			Body:     body,
 		}
 
 		if err := s.Create(t); err != nil {
@@ -78,5 +97,7 @@ func init() {
 	createCmd.Flags().StringVarP(&createTags, "tags", "t", "", "comma-separated tags")
 	createCmd.Flags().StringVarP(&createAssignee, "assignee", "a", "", "task assignee")
 	createCmd.Flags().StringVarP(&createStatus, "status", "s", "", "initial status (default: first configured status)")
+	createCmd.Flags().StringVarP(&createTemplate, "template", "T", "", "template name (default: \"default\")")
+	createCmd.Flags().BoolVar(&createNoTemplate, "no-template", false, "create with empty body")
 	rootCmd.AddCommand(createCmd)
 }
