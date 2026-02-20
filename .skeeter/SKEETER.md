@@ -15,8 +15,8 @@ Tasks are markdown files with YAML frontmatter in the `tasks/` subdirectory.
 |------------|----------------------------------------------------------|
 | id         | Task identifier (e.g., US-001)                           |
 | title      | Short task title                                         |
-| status     | One of: backlog, ready-for-development, in-progress, done   |
-| priority   | One of: critical, high, medium, low  |
+| status     | One of: backlog, ready-for-development, in-progress, done |
+| priority   | One of: critical, high, medium, low |
 | assignee   | Who is working on this (empty = available)               |
 | tags       | Array of labels                                          |
 | links      | Related URLs                                             |

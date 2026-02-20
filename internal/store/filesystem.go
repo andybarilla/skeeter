@@ -74,31 +74,42 @@ func (s *FilesystemStore) writeDefaultTemplate() error {
 }
 
 func (s *FilesystemStore) writeSkeeterMD() error {
-	content := `# Skeeter — Project Tasks
+	// Derive the "ready" status (second in list) and "done" status (last in list)
+	readyStatus := "ready-for-development"
+	inProgressStatus := "in-progress"
+	doneStatus := "done"
+	if len(s.Config.Statuses) >= 2 {
+		readyStatus = s.Config.Statuses[1]
+	}
+	if len(s.Config.Statuses) >= 3 {
+		inProgressStatus = s.Config.Statuses[2]
+	}
+	if len(s.Config.Statuses) >= 1 {
+		doneStatus = s.Config.Statuses[len(s.Config.Statuses)-1]
+	}
 
-Tasks are markdown files with YAML frontmatter in the ` + "`tasks/`" + ` subdirectory.
+	prefix := s.Config.Project.Prefix
 
-## For Agents: Finding Work
+	content := "# Skeeter — Project Tasks\n\n" +
+		"Tasks are markdown files with YAML frontmatter in the `tasks/` subdirectory.\n\n" +
+		"## For Agents: Finding Work\n\n" +
+		"1. Look for tasks where `status: " + readyStatus + "` and `assignee:` is empty\n" +
+		"2. Set `assignee: <your-name>` and `status: " + inProgressStatus + "` before starting\n" +
+		"3. Use `Acceptance Criteria` as your definition of done\n" +
+		"4. Set `status: " + doneStatus + "` when complete\n\n" +
+		"## Frontmatter Fields\n\n" +
+		"| Field      | Description                                              |\n" +
+		"|------------|----------------------------------------------------------|\n" +
+		"| id         | Task identifier (e.g., " + prefix + "-001)                           |\n" +
+		"| title      | Short task title                                         |\n" +
+		"| status     | One of: " + strings.Join(s.Config.Statuses, ", ") + " |\n" +
+		"| priority   | One of: " + strings.Join(s.Config.Priorities, ", ") + " |\n" +
+		"| assignee   | Who is working on this (empty = available)               |\n" +
+		"| tags       | Array of labels                                          |\n" +
+		"| links      | Related URLs                                             |\n" +
+		"| created    | Creation date                                            |\n" +
+		"| updated    | Last modified date                                       |\n"
 
-1. Look for tasks where ` + "`status: ready-for-development`" + ` and ` + "`assignee:`" + ` is empty
-2. Set ` + "`assignee: <your-name>`" + ` and ` + "`status: in-progress`" + ` before starting
-3. Use ` + "`Acceptance Criteria`" + ` as your definition of done
-4. Set ` + "`status: done`" + ` when complete
-
-## Frontmatter Fields
-
-| Field      | Description                                              |
-|------------|----------------------------------------------------------|
-| id         | Task identifier (e.g., US-001)                           |
-| title      | Short task title                                         |
-| status     | One of: ` + strings.Join(s.Config.Statuses, ", ") + `   |
-| priority   | One of: ` + strings.Join(s.Config.Priorities, ", ") + `  |
-| assignee   | Who is working on this (empty = available)               |
-| tags       | Array of labels                                          |
-| links      | Related URLs                                             |
-| created    | Creation date                                            |
-| updated    | Last modified date                                       |
-`
 	path := filepath.Join(s.Dir, "SKEETER.md")
 	return os.WriteFile(path, []byte(content), 0644)
 }
@@ -182,6 +193,7 @@ func (s *FilesystemStore) Create(t *task.Task) error {
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		return err
 	}
+	s.writeSkeeterMD()
 	return s.autoCommit(fmt.Sprintf("create %s: %s", t.ID, t.Title), path)
 }
 
@@ -195,6 +207,7 @@ func (s *FilesystemStore) Update(t *task.Task) error {
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		return err
 	}
+	s.writeSkeeterMD()
 	return s.autoCommit(fmt.Sprintf("update %s: %s", t.ID, t.Title), path)
 }
 
