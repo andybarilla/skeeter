@@ -146,6 +146,11 @@
     border-radius: var(--radius);
     padding: 8px 10px;
     outline: none;
+    color-scheme: dark;
+  }
+
+  :global(.light) select {
+    color-scheme: light;
   }
 
   input:focus, select:focus, textarea:focus {

@@ -301,6 +301,11 @@
     border-radius: var(--radius);
     padding: 8px 10px;
     outline: none;
+    color-scheme: dark;
+  }
+
+  :global(.light) .edit-form select {
+    color-scheme: light;
   }
 
   .edit-form input:focus, .edit-form select:focus, .edit-form textarea:focus {
