@@ -12,3 +12,5 @@ priorities:
     - medium
     - low
 auto_commit: false
+llm:
+    command: ""

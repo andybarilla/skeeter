@@ -10,41 +10,27 @@ import (
 )
 
 func EnhanceTask(ctx context.Context, cfg *config.Config, t *task.Task, template string) (string, error) {
-	provider, err := NewProvider(cfg.LLM)
-	if err != nil {
-		return "", err
+	if cfg.LLM.Command == "" {
+		return "", fmt.Errorf("no LLM command configured (run: skeeter config set llm.command \"claude -p\")")
 	}
 
-	systemPrompt := buildSystemPrompt(cfg)
-	userPrompt := buildUserPrompt(t.Title, t.Priority, t.Tags, t.Body, template)
-
-	messages := []Message{
-		{Role: "system", Content: systemPrompt},
-		{Role: "user", Content: userPrompt},
-	}
-
-	return provider.Complete(ctx, messages)
+	prompt := buildPrompt(cfg, t.Title, t.Priority, t.Tags, t.Body, template)
+	return RunCLI(ctx, cfg.LLM.Command, prompt)
 }
 
 func EnhanceDraft(ctx context.Context, cfg *config.Config, title, body, template string) (string, error) {
-	provider, err := NewProvider(cfg.LLM)
-	if err != nil {
-		return "", err
+	if cfg.LLM.Command == "" {
+		return "", fmt.Errorf("no LLM command configured (run: skeeter config set llm.command \"claude -p\")")
 	}
 
-	systemPrompt := buildSystemPrompt(cfg)
-	userPrompt := buildUserPrompt(title, "", nil, body, template)
-
-	messages := []Message{
-		{Role: "system", Content: systemPrompt},
-		{Role: "user", Content: userPrompt},
-	}
-
-	return provider.Complete(ctx, messages)
+	prompt := buildPrompt(cfg, title, "", nil, body, template)
+	return RunCLI(ctx, cfg.LLM.Command, prompt)
 }
 
-func buildSystemPrompt(cfg *config.Config) string {
+func buildPrompt(cfg *config.Config, title, priority string, tags []string, body, template string) string {
 	var b strings.Builder
+
+	// System context
 	b.WriteString("You are a technical project manager helping flesh out task descriptions for a software project.\n\n")
 
 	if cfg.Project.Name != "" {
@@ -59,14 +45,9 @@ func buildSystemPrompt(cfg *config.Config) string {
 	b.WriteString("- Add relevant technical context and considerations\n")
 	b.WriteString("- Keep the language clear and actionable\n")
 	b.WriteString("- Do NOT include YAML frontmatter in your output\n")
-	b.WriteString("- Output ONLY the task body (markdown content), nothing else\n")
+	b.WriteString("- Output ONLY the task body (markdown content), nothing else\n\n")
 
-	return b.String()
-}
-
-func buildUserPrompt(title, priority string, tags []string, body, template string) string {
-	var b strings.Builder
-
+	// Task details
 	fmt.Fprintf(&b, "Task title: %s\n", title)
 	if priority != "" {
 		fmt.Fprintf(&b, "Priority: %s\n", priority)

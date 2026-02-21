@@ -14,10 +14,7 @@ type ProjectConfig struct {
 }
 
 type LLMConfig struct {
-	Provider string `yaml:"provider" json:"provider"`
-	Model    string `yaml:"model" json:"model"`
-	APIKey   string `yaml:"api_key" json:"api_key"`
-	BaseURL  string `yaml:"base_url" json:"base_url"`
+	Command string `yaml:"command" json:"command"`
 }
 
 type Config struct {

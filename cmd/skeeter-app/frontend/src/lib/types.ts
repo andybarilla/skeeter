@@ -22,10 +22,7 @@ export interface ProjectConfig {
 }
 
 export interface LLMConfig {
-  provider: string;
-  model: string;
-  api_key: string;
-  base_url: string;
+  command: string;
 }
 
 export interface Config {
