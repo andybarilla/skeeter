@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"sort"
 
-	"github.com/andybarilla/skeeter/internal/store"
-	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/spf13/cobra"
 )
 
@@ -27,35 +24,15 @@ var nextCmd = &cobra.Command{
 
 		cfg := s.GetConfig()
 
-		tasks, err := s.List(store.Filter{Status: "ready-for-development"})
+		picked, err := pickNextTask(s, cfg)
 		if err != nil {
 			return err
 		}
 
-		// Filter to unassigned only
-		var available []task.Task
-		for _, t := range tasks {
-			if t.Assignee == "" {
-				available = append(available, t)
-			}
-		}
-
-		if len(available) == 0 {
+		if picked == nil {
 			fmt.Fprintln(os.Stderr, "No tasks available")
 			os.Exit(1)
 		}
-
-		// Sort by priority rank (lower = higher priority), then by ID
-		sort.Slice(available, func(i, j int) bool {
-			ri := cfg.PriorityRank(available[i].Priority)
-			rj := cfg.PriorityRank(available[j].Priority)
-			if ri != rj {
-				return ri < rj
-			}
-			return available[i].ID < available[j].ID
-		})
-
-		picked := &available[0]
 
 		if nextAssign != "" {
 			picked.Assignee = nextAssign

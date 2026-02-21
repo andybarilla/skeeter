@@ -14,7 +14,8 @@ type ProjectConfig struct {
 }
 
 type LLMConfig struct {
-	Command string `yaml:"command" json:"command"`
+	Command     string `yaml:"command" json:"command"`
+	WorkCommand string `yaml:"work_command,omitempty" json:"work_command"`
 }
 
 type Config struct {

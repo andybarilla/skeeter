@@ -34,6 +34,7 @@ var configCmd = &cobra.Command{
 		fmt.Printf("Priorities:  %s\n", strings.Join(cfg.Priorities, ", "))
 		fmt.Printf("Auto-commit: %v\n", cfg.AutoCommit)
 		fmt.Printf("LLM command: %s\n", cfg.LLM.Command)
+		fmt.Printf("LLM work cmd: %s\n", cfg.LLM.WorkCommand)
 		return nil
 	},
 }
@@ -42,12 +43,13 @@ var configSetCmd = &cobra.Command{
 	Use:   "set <key> <value>",
 	Short: "Set a configuration value",
 	Long: `Set a configuration value. Available keys:
-  name          Project name
-  prefix        Task ID prefix (e.g., US, TASK, BUG)
-  statuses      Comma-separated status list (ordered as workflow)
-  priorities    Comma-separated priority list (highest first)
-  auto_commit   Enable auto-commit (true/false)
-  llm.command   LLM CLI command (e.g., "claude -p", "aichat -S", "llm")`,
+  name              Project name
+  prefix            Task ID prefix (e.g., US, TASK, BUG)
+  statuses          Comma-separated status list (ordered as workflow)
+  priorities        Comma-separated priority list (highest first)
+  auto_commit       Enable auto-commit (true/false)
+  llm.command       LLM CLI command (e.g., "claude -p", "aichat -S", "llm")
+  llm.work_command  LLM CLI command for skeeter work (e.g., "claude -p --dangerously-skip-permissions")`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if remoteFlag != "" {
@@ -100,8 +102,10 @@ var configSetCmd = &cobra.Command{
 			}
 		case "llm.command":
 			s.Config.LLM.Command = value
+		case "llm.work_command":
+			s.Config.LLM.WorkCommand = value
 		default:
-			return fmt.Errorf("unknown config key %q (valid: name, prefix, statuses, priorities, auto_commit, llm.command)", key)
+			return fmt.Errorf("unknown config key %q (valid: name, prefix, statuses, priorities, auto_commit, llm.command, llm.work_command)", key)
 		}
 
 		if err := s.Config.Save(dir); err != nil {
