@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +17,8 @@ var (
 	createStatus     string
 	createTemplate   string
 	createNoTemplate bool
+	createDepends    string
+	createDue        string
 )
 
 var createCmd = &cobra.Command{
@@ -40,6 +43,12 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("invalid status %q (valid: %s)", createStatus, strings.Join(cfg.Statuses, ", "))
 		}
 
+		if createDue != "" {
+			if _, err := time.Parse("2006-01-02", createDue); err != nil {
+				return fmt.Errorf("invalid due date %q (format: YYYY-MM-DD)", createDue)
+			}
+		}
+
 		id, err := s.NextID()
 		if err != nil {
 			return err
@@ -54,6 +63,18 @@ var createCmd = &cobra.Command{
 			}
 		}
 
+		var dependsOn task.FlowSlice
+		if createDepends != "" {
+			for _, d := range strings.Split(createDepends, ",") {
+				depID := strings.TrimSpace(d)
+				depID = strings.ToUpper(depID)
+				if _, err := s.Get(depID); err != nil {
+					return fmt.Errorf("dependency task %q not found", depID)
+				}
+				dependsOn = append(dependsOn, depID)
+			}
+		}
+
 		body := ""
 		if !createNoTemplate {
 			tmplName := createTemplate
@@ -62,7 +83,6 @@ var createCmd = &cobra.Command{
 			}
 			tmplBody, err := s.LoadTemplate(tmplName)
 			if err != nil {
-				// If using default template and it doesn't exist, silently use empty body
 				if createTemplate != "" {
 					return err
 				}
@@ -72,15 +92,23 @@ var createCmd = &cobra.Command{
 		}
 
 		t := &task.Task{
-			ID:       id,
-			Title:    args[0],
-			Status:   createStatus,
-			Priority: createPriority,
-			Assignee: createAssignee,
-			Tags:     tags,
-			Created:  now,
-			Updated:  now,
-			Body:     body,
+			ID:        id,
+			Title:     args[0],
+			Status:    createStatus,
+			Priority:  createPriority,
+			Assignee:  createAssignee,
+			Tags:      tags,
+			DependsOn: dependsOn,
+			Due:       createDue,
+			Created:   now,
+			Updated:   now,
+			Body:      body,
+		}
+
+		if len(dependsOn) > 0 {
+			if cycle, _ := store.DetectCircularDependency(t, s); len(cycle) > 0 {
+				return fmt.Errorf("circular dependency detected: %s -> %s", strings.Join(cycle, " -> "), t.ID)
+			}
 		}
 
 		if err := s.Create(t); err != nil {
@@ -88,6 +116,9 @@ var createCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Created %s: %s\n", t.ID, t.Title)
+		if len(dependsOn) > 0 {
+			fmt.Printf("Depends on: %s\n", strings.Join(dependsOn, ", "))
+		}
 		return nil
 	},
 }
@@ -99,5 +130,7 @@ func init() {
 	createCmd.Flags().StringVarP(&createStatus, "status", "s", "", "initial status (default: first configured status)")
 	createCmd.Flags().StringVarP(&createTemplate, "template", "T", "", "template name (default: \"default\")")
 	createCmd.Flags().BoolVar(&createNoTemplate, "no-template", false, "create with empty body")
+	createCmd.Flags().StringVarP(&createDepends, "depends", "d", "", "comma-separated task IDs this task depends on")
+	createCmd.Flags().StringVarP(&createDue, "due", "", "", "due date (format: YYYY-MM-DD)")
 	rootCmd.AddCommand(createCmd)
 }

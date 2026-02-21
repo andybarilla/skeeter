@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os/exec"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,12 +19,13 @@ import (
 )
 
 type GitHubStore struct {
-	owner  string
-	repo   string
-	dir    string
-	token  string
-	client *http.Client
-	cfg    *config.Config
+	owner   string
+	repo    string
+	dir     string
+	token   string
+	client  *http.Client
+	cfg     *config.Config
+	baseURL string
 }
 
 type ghContentsResponse struct {
@@ -85,7 +86,11 @@ func resolveToken() (string, error) {
 }
 
 func (s *GitHubStore) contentsURL(path string) string {
-	return fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s", s.owner, s.repo, path)
+	base := s.baseURL
+	if base == "" {
+		base = "https://api.github.com"
+	}
+	return fmt.Sprintf("%s/repos/%s/%s/contents/%s", base, s.owner, s.repo, path)
 }
 
 func (s *GitHubStore) tasksPath() string {

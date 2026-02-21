@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 var (
 	dirFlag    string
 	remoteFlag string
+	outputFlag string
 )
 
 var rootCmd = &cobra.Command{
@@ -22,7 +24,11 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if errors.Is(err, ErrNoTasksAvailable) {
+			fmt.Fprintln(os.Stderr, "No tasks available")
+		} else {
+			fmt.Fprintln(os.Stderr, err)
+		}
 		os.Exit(1)
 	}
 }
@@ -30,6 +36,7 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVar(&dirFlag, "dir", "", "path to skeeter directory (default: auto-detect .skeeter/)")
 	rootCmd.PersistentFlags().StringVar(&remoteFlag, "remote", "", "use GitHub API backend (format: owner/repo)")
+	rootCmd.PersistentFlags().StringVarP(&outputFlag, "output", "o", "table", "output format: table, json, yaml")
 }
 
 func openStore() (store.Store, error) {
@@ -41,4 +48,16 @@ func openStore() (store.Store, error) {
 		return nil, err
 	}
 	return store.NewFilesystem(dir)
+}
+
+func isJSONOutput() bool {
+	return outputFlag == "json"
+}
+
+func isYAMLOutput() bool {
+	return outputFlag == "yaml"
+}
+
+func isTableOutput() bool {
+	return outputFlag == "table" || outputFlag == ""
 }

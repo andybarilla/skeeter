@@ -78,7 +78,6 @@ func (s *FilesystemStore) RegenerateSkeeterMD() error {
 }
 
 func (s *FilesystemStore) writeSkeeterMD() error {
-	// Derive the "ready" status (second in list) and "done" status (last in list)
 	readyStatus := "ready-for-development"
 	inProgressStatus := "in-progress"
 	doneStatus := "done"
@@ -98,9 +97,12 @@ func (s *FilesystemStore) writeSkeeterMD() error {
 		"Tasks are markdown files with YAML frontmatter in the `tasks/` subdirectory.\n\n" +
 		"## For Agents: Finding Work\n\n" +
 		"1. Look for tasks where `status: " + readyStatus + "` and `assignee:` is empty\n" +
-		"2. Set `assignee: <your-name>` and `status: " + inProgressStatus + "` before starting\n" +
-		"3. Use `Acceptance Criteria` as your definition of done\n" +
-		"4. Set `status: " + doneStatus + "` when complete\n\n" +
+		"2. Check that all tasks in `depends_on` have status: " + doneStatus + "\n" +
+		"3. Set `assignee: <your-name>` and `status: " + inProgressStatus + "` before starting\n" +
+		"4. Use `Acceptance Criteria` as your definition of done\n" +
+		"5. Set `status: " + doneStatus + "` when complete\n\n" +
+		"## Dependencies\n\n" +
+		"Tasks can depend on other tasks using the `depends_on` field. A task is \"blocked\" until all its dependencies are complete.\n\n" +
 		"## Frontmatter Fields\n\n" +
 		"| Field      | Description                                              |\n" +
 		"|------------|----------------------------------------------------------|\n" +
@@ -111,6 +113,8 @@ func (s *FilesystemStore) writeSkeeterMD() error {
 		"| assignee   | Who is working on this (empty = available)               |\n" +
 		"| tags       | Array of labels                                          |\n" +
 		"| links      | Related URLs                                             |\n" +
+		"| depends_on | Array of task IDs that must be complete first            |\n" +
+		"| due        | Due date (format: YYYY-MM-DD)                            |\n" +
 		"| created    | Creation date                                            |\n" +
 		"| updated    | Last modified date                                       |\n"
 

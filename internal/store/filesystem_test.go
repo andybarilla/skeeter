@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/andybarilla/skeeter/internal/config"
 	"github.com/andybarilla/skeeter/internal/task"
 )
 
@@ -327,5 +328,198 @@ func TestAutoCommitDisabled(t *testing.T) {
 	// Should only have the initial commit
 	if len(commits) != 1 {
 		t.Errorf("expected 1 commit (initial only), got %d: %v", len(commits), commits)
+	}
+}
+
+func TestNewFilesystem(t *testing.T) {
+	t.Run("valid directory", func(t *testing.T) {
+		dir := t.TempDir()
+		skeeterDir := filepath.Join(dir, ".skeeter")
+
+		s := &FilesystemStore{Dir: skeeterDir}
+		if err := s.Init("test"); err != nil {
+			t.Fatal(err)
+		}
+
+		store, err := NewFilesystem(skeeterDir)
+		if err != nil {
+			t.Fatalf("NewFilesystem: %v", err)
+		}
+		if store.Dir != skeeterDir {
+			t.Errorf("Dir = %q, want %q", store.Dir, skeeterDir)
+		}
+	})
+
+	t.Run("missing config", func(t *testing.T) {
+		dir := t.TempDir()
+		skeeterDir := filepath.Join(dir, ".skeeter")
+		if err := os.MkdirAll(skeeterDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		_, err := NewFilesystem(skeeterDir)
+		if err == nil {
+			t.Error("expected error for missing config.yaml")
+		}
+	})
+}
+
+func TestGetConfig(t *testing.T) {
+	s := setupTestStore(t)
+
+	cfg := s.GetConfig()
+	if cfg == nil {
+		t.Fatal("GetConfig returned nil")
+	}
+	if cfg.Project.Name != "test-project" {
+		t.Errorf("Project.Name = %q, want %q", cfg.Project.Name, "test-project")
+	}
+}
+
+func TestRegenerateSkeeterMD(t *testing.T) {
+	s := setupTestStore(t)
+
+	// Modify config
+	s.Config.Statuses = []string{"todo", "doing", "done"}
+	s.Config.Priorities = []string{"p0", "p1", "p2"}
+
+	if err := s.RegenerateSkeeterMD(); err != nil {
+		t.Fatalf("RegenerateSkeeterMD: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(s.Dir, "SKEETER.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "todo, doing, done") {
+		t.Error("SKEETER.md should contain custom statuses")
+	}
+	if !strings.Contains(content, "p0, p1, p2") {
+		t.Error("SKEETER.md should contain custom priorities")
+	}
+}
+
+func TestListEmptyDirectory(t *testing.T) {
+	s := setupTestStore(t)
+
+	tasks, err := s.List(Filter{})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Errorf("List on empty dir = %d tasks, want 0", len(tasks))
+	}
+}
+
+func TestListInvalidTaskFile(t *testing.T) {
+	s := setupTestStore(t)
+
+	// Create invalid task file (no frontmatter)
+	invalidPath := filepath.Join(s.tasksDir(), "US-999.md")
+	if err := os.WriteFile(invalidPath, []byte("not a valid task"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Should skip invalid file and not error
+	tasks, err := s.List(Filter{})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Errorf("List with invalid file = %d tasks, want 0", len(tasks))
+	}
+}
+
+func TestListNonexistentDirectory(t *testing.T) {
+	s := &FilesystemStore{
+		Dir:    t.TempDir() + "/nonexistent",
+		Config: config.Default(),
+	}
+
+	tasks, err := s.List(Filter{})
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if tasks != nil {
+		t.Errorf("List on nonexistent dir = %v, want nil", tasks)
+	}
+}
+
+func TestListPriorityFilter(t *testing.T) {
+	s := setupTestStore(t)
+
+	tasks := []*task.Task{
+		{ID: "US-001", Title: "Task 1", Status: "backlog", Priority: "high", Created: "2026-01-01", Updated: "2026-01-01"},
+		{ID: "US-002", Title: "Task 2", Status: "backlog", Priority: "low", Created: "2026-01-01", Updated: "2026-01-01"},
+		{ID: "US-003", Title: "Task 3", Status: "backlog", Priority: "high", Created: "2026-01-01", Updated: "2026-01-01"},
+	}
+	for _, tk := range tasks {
+		s.Create(tk)
+	}
+
+	high, _ := s.List(Filter{Priority: "high"})
+	if len(high) != 2 {
+		t.Errorf("List(priority=high) = %d tasks, want 2", len(high))
+	}
+}
+
+func TestUpdateNonexistentTask(t *testing.T) {
+	s := setupTestStore(t)
+
+	tk := &task.Task{ID: "US-999", Title: "Ghost", Status: "backlog", Created: "2026-01-01", Updated: "2026-01-01"}
+	// Update actually creates the file if it doesn't exist
+	err := s.Update(tk)
+	if err != nil {
+		t.Fatalf("Update created file: %v", err)
+	}
+
+	// Verify task was created
+	got, err := s.Get("US-999")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.Title != "Ghost" {
+		t.Errorf("Title = %q, want %q", got.Title, "Ghost")
+	}
+}
+
+func TestLoadTemplatePath(t *testing.T) {
+	s := setupTestStore(t)
+
+	// Test error message contains path info
+	_, err := s.LoadTemplate("nonexistent")
+	if err == nil {
+		t.Fatal("expected error for missing template")
+	}
+	if !strings.Contains(err.Error(), "templates") {
+		t.Errorf("error should contain templates path: %v", err)
+	}
+}
+
+func TestSkeeterMDCustomStatuses(t *testing.T) {
+	s := setupTestStore(t)
+	s.Config.Statuses = []string{"new", "ready", "working", "complete"}
+	s.Config.Project.Prefix = "TK"
+
+	if err := s.writeSkeeterMD(); err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(s.Dir, "SKEETER.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	content := string(data)
+	if !strings.Contains(content, "status: ready") {
+		t.Error("SKEETER.md should reference 'ready' as the available status")
+	}
+	if !strings.Contains(content, "status: complete") {
+		t.Error("SKEETER.md should reference 'complete' as done status")
+	}
+	if !strings.Contains(content, "TK-") {
+		t.Error("SKEETER.md should show custom prefix in examples")
 	}
 }

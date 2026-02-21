@@ -8,7 +8,8 @@ import (
 	"github.com/andybarilla/skeeter/internal/task"
 )
 
-// pickNextTask returns the highest-priority unassigned task in ready-for-development status.
+// pickNextTask returns the highest-priority unassigned task in ready-for-development status
+// that has all dependencies met.
 // Returns nil with no error when no tasks are available.
 func pickNextTask(s store.Store, cfg *config.Config) (*task.Task, error) {
 	tasks, err := s.List(store.Filter{Status: "ready-for-development"})
@@ -16,9 +17,14 @@ func pickNextTask(s store.Store, cfg *config.Config) (*task.Task, error) {
 		return nil, err
 	}
 
+	allTasks, err := s.List(store.Filter{})
+	if err != nil {
+		return nil, err
+	}
+
 	var available []task.Task
 	for _, t := range tasks {
-		if t.Assignee == "" {
+		if t.Assignee == "" && !store.IsBlocked(s, &t, allTasks) {
 			available = append(available, t)
 		}
 	}

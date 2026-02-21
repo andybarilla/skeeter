@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -11,6 +11,8 @@ var (
 	nextAssign string
 	nextQuiet  bool
 )
+
+var ErrNoTasksAvailable = errors.New("no tasks available")
 
 var nextCmd = &cobra.Command{
 	Use:   "next",
@@ -30,8 +32,13 @@ var nextCmd = &cobra.Command{
 		}
 
 		if picked == nil {
-			fmt.Fprintln(os.Stderr, "No tasks available")
-			os.Exit(1)
+			if isJSONOutput() {
+				return outputNullJSON()
+			}
+			if isYAMLOutput() {
+				return outputNullYAML()
+			}
+			return ErrNoTasksAvailable
 		}
 
 		if nextAssign != "" {
@@ -40,6 +47,13 @@ var nextCmd = &cobra.Command{
 			if err := s.Update(picked); err != nil {
 				return err
 			}
+		}
+
+		if isJSONOutput() {
+			return outputTaskJSON(picked)
+		}
+		if isYAMLOutput() {
+			return outputTaskYAML(picked)
 		}
 
 		if nextQuiet {
