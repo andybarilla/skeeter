@@ -21,11 +21,19 @@ export interface ProjectConfig {
   prefix: string;
 }
 
+export interface LLMConfig {
+  provider: string;
+  model: string;
+  api_key: string;
+  base_url: string;
+}
+
 export interface Config {
   project: ProjectConfig;
   statuses: string[];
   priorities: string[];
   auto_commit: boolean;
+  llm: LLMConfig;
 }
 
 export interface BoardData {

@@ -3,7 +3,7 @@
   import { currentConfig } from '../lib/stores/config';
   import { refreshBoard } from '../lib/stores/board';
   import { notify, notifyError } from '../lib/stores/notifications';
-  import { UpdateTask, GetTask } from '../../wailsjs/go/main/App';
+  import { UpdateTask, GetTask, EnhanceTask } from '../../wailsjs/go/main/App';
   import PriorityBadge from './PriorityBadge.svelte';
 
   let editing = false;
@@ -14,6 +14,7 @@
   let tagsStr = '';
   let body = '';
   let saving = false;
+  let enhancing = false;
 
   $: config = $currentConfig;
   $: task = $selectedTask;
@@ -57,6 +58,23 @@
       notifyError(e);
     } finally {
       saving = false;
+    }
+  }
+
+  async function handleEnhance() {
+    if (!task) return;
+    enhancing = true;
+    try {
+      await EnhanceTask(task.id);
+      const updated = await GetTask(task.id);
+      selectedTask.set(updated);
+      body = updated.body || '';
+      notify('success', `Enhanced ${task.id}`);
+      await refreshBoard();
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      enhancing = false;
     }
   }
 
@@ -166,6 +184,9 @@
             </div>
           {/if}
           <div class="actions">
+            <button class="btn-secondary" on:click={handleEnhance} disabled={enhancing}>
+              {enhancing ? 'Enhancing...' : 'Enhance'}
+            </button>
             <button class="btn-primary" on:click={startEdit}>Edit</button>
           </div>
         </div>

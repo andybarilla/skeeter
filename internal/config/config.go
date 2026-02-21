@@ -13,11 +13,19 @@ type ProjectConfig struct {
 	Prefix string `yaml:"prefix" json:"prefix"`
 }
 
+type LLMConfig struct {
+	Provider string `yaml:"provider" json:"provider"`
+	Model    string `yaml:"model" json:"model"`
+	APIKey   string `yaml:"api_key" json:"api_key"`
+	BaseURL  string `yaml:"base_url" json:"base_url"`
+}
+
 type Config struct {
 	Project    ProjectConfig `yaml:"project" json:"project"`
 	Statuses   []string      `yaml:"statuses" json:"statuses"`
 	Priorities []string      `yaml:"priorities" json:"priorities"`
 	AutoCommit bool          `yaml:"auto_commit" json:"auto_commit"`
+	LLM        LLMConfig     `yaml:"llm,omitempty" json:"llm"`
 }
 
 func Default() *Config {

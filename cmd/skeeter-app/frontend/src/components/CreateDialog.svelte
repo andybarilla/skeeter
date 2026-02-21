@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CreateTask, GetTemplate } from '../../wailsjs/go/main/App';
+  import { CreateTask, GetTemplate, EnhanceDraft } from '../../wailsjs/go/main/App';
   import { refreshBoard } from '../lib/stores/board';
   import { currentConfig } from '../lib/stores/config';
   import { notify, notifyError } from '../lib/stores/notifications';
@@ -13,6 +13,7 @@
   let tagsStr = '';
   let body = '';
   let submitting = false;
+  let enhancing = false;
 
   $: config = $currentConfig;
 
@@ -42,6 +43,20 @@
       notifyError(e);
     } finally {
       submitting = false;
+    }
+  }
+
+  async function handleEnhance() {
+    if (!title.trim()) return;
+    enhancing = true;
+    try {
+      const enhanced = await EnhanceDraft(title, body);
+      body = enhanced;
+      notify('success', 'Draft enhanced with AI');
+    } catch (e) {
+      notifyError(e);
+    } finally {
+      enhancing = false;
     }
   }
 
@@ -85,6 +100,11 @@
           <textarea id="body" bind:value={body} rows="4" placeholder="Markdown description..."></textarea>
         </div>
         <div class="actions">
+          <button type="button" class="btn-secondary" on:click={handleEnhance}
+                  disabled={enhancing || !title.trim()}>
+            {enhancing ? 'Enhancing...' : 'Enhance with AI'}
+          </button>
+          <span class="spacer"></span>
           <button type="button" class="btn-secondary" on:click={onClose}>Cancel</button>
           <button type="submit" class="btn-primary" disabled={submitting || !title.trim()}>
             {submitting ? 'Creating...' : 'Create'}
@@ -202,7 +222,16 @@
     border: 1px solid var(--border);
   }
 
-  .btn-secondary:hover {
+  .btn-secondary:hover:not(:disabled) {
     background: var(--bg-hover);
+  }
+
+  .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .spacer {
+    flex: 1;
   }
 </style>

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/andybarilla/skeeter/internal/config"
+	"github.com/andybarilla/skeeter/internal/llm"
 	"github.com/andybarilla/skeeter/internal/store"
 	"github.com/andybarilla/skeeter/internal/task"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
@@ -391,4 +392,55 @@ func (a *App) GetActiveRepoName() string {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 	return a.repoName
+}
+
+// EnhanceTask enhances a saved task's body using AI and persists the result.
+func (a *App) EnhanceTask(id string) (string, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if a.store == nil {
+		return "", fmt.Errorf("no repo selected")
+	}
+
+	t, err := a.store.Get(id)
+	if err != nil {
+		return "", err
+	}
+
+	cfg := a.store.GetConfig()
+	template, _ := a.store.LoadTemplate("default")
+
+	enhanced, err := llm.EnhanceTask(a.ctx, cfg, t, template)
+	if err != nil {
+		return "", fmt.Errorf("enhance failed: %w", err)
+	}
+
+	t.Body = enhanced
+	t.Updated = time.Now().Format("2006-01-02")
+	if err := a.store.Update(t); err != nil {
+		return "", fmt.Errorf("saving task: %w", err)
+	}
+
+	return enhanced, nil
+}
+
+// EnhanceDraft enhances unsaved task text using AI without persisting.
+func (a *App) EnhanceDraft(title, body string) (string, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	if a.store == nil {
+		return "", fmt.Errorf("no repo selected")
+	}
+
+	cfg := a.store.GetConfig()
+	template, _ := a.store.LoadTemplate("default")
+
+	enhanced, err := llm.EnhanceDraft(a.ctx, cfg, title, body, template)
+	if err != nil {
+		return "", fmt.Errorf("enhance failed: %w", err)
+	}
+
+	return enhanced, nil
 }

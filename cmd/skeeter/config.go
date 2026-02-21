@@ -33,6 +33,14 @@ var configCmd = &cobra.Command{
 		fmt.Printf("Statuses:    %s\n", strings.Join(cfg.Statuses, " -> "))
 		fmt.Printf("Priorities:  %s\n", strings.Join(cfg.Priorities, ", "))
 		fmt.Printf("Auto-commit: %v\n", cfg.AutoCommit)
+		fmt.Printf("LLM provider: %s\n", cfg.LLM.Provider)
+		fmt.Printf("LLM model:    %s\n", cfg.LLM.Model)
+		fmt.Printf("LLM base URL: %s\n", cfg.LLM.BaseURL)
+		if cfg.LLM.APIKey != "" {
+			fmt.Printf("LLM API key:  %s\n", "****")
+		} else {
+			fmt.Printf("LLM API key:  %s\n", "(not set)")
+		}
 		return nil
 	},
 }
@@ -41,11 +49,15 @@ var configSetCmd = &cobra.Command{
 	Use:   "set <key> <value>",
 	Short: "Set a configuration value",
 	Long: `Set a configuration value. Available keys:
-  name         Project name
-  prefix       Task ID prefix (e.g., US, TASK, BUG)
-  statuses     Comma-separated status list (ordered as workflow)
-  priorities   Comma-separated priority list (highest first)
-  auto_commit  Enable auto-commit (true/false)`,
+  name          Project name
+  prefix        Task ID prefix (e.g., US, TASK, BUG)
+  statuses      Comma-separated status list (ordered as workflow)
+  priorities    Comma-separated priority list (highest first)
+  auto_commit   Enable auto-commit (true/false)
+  llm.provider  LLM provider (anthropic, openai, ollama, lmstudio)
+  llm.model     LLM model name
+  llm.api_key   LLM API key
+  llm.base_url  LLM base URL`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if remoteFlag != "" {
@@ -96,8 +108,16 @@ var configSetCmd = &cobra.Command{
 			default:
 				return fmt.Errorf("invalid value %q for auto_commit (use true/false)", value)
 			}
+		case "llm.provider":
+			s.Config.LLM.Provider = value
+		case "llm.model":
+			s.Config.LLM.Model = value
+		case "llm.api_key":
+			s.Config.LLM.APIKey = value
+		case "llm.base_url":
+			s.Config.LLM.BaseURL = value
 		default:
-			return fmt.Errorf("unknown config key %q (valid: name, prefix, statuses, priorities, auto_commit)", key)
+			return fmt.Errorf("unknown config key %q (valid: name, prefix, statuses, priorities, auto_commit, llm.provider, llm.model, llm.api_key, llm.base_url)", key)
 		}
 
 		if err := s.Config.Save(dir); err != nil {
