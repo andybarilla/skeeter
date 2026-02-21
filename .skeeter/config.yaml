@@ -13,4 +13,4 @@ priorities:
     - low
 auto_commit: false
 llm:
-    command: ""
+    tool: claude

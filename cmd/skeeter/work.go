@@ -27,12 +27,12 @@ Each iteration:
   1. Finds the highest-priority unassigned task in ready-for-development
   2. Claims it (assigns + moves to in-progress)
   3. Builds a prompt with task details
-  4. Pipes the prompt to the configured work command
+  4. Pipes the prompt to the configured LLM tool
   5. On success, marks the task done
   6. Repeats until no tasks remain or --max iterations reached
 
-Configure the work command first:
-  skeeter config set llm.work_command "claude -p --dangerously-skip-permissions"`,
+Configure the LLM tool:
+  skeeter config set llm.tool claude`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		s, err := openStore()
 		if err != nil {
@@ -41,8 +41,9 @@ Configure the work command first:
 
 		cfg := s.GetConfig()
 
-		if cfg.LLM.WorkCommand == "" {
-			return fmt.Errorf("no LLM work command configured (run: skeeter config set llm.work_command \"claude -p --dangerously-skip-permissions\")")
+		tool, err := cfg.ResolveTool()
+		if err != nil {
+			return err
 		}
 
 		dir, err := resolve.Dir(dirFlag)
@@ -83,10 +84,13 @@ Configure the work command first:
 				return err
 			}
 
-			prompt := llm.BuildWorkPrompt(cfg, picked, dir)
+			systemPrompt, userContent := llm.BuildWorkPrompts(cfg, picked, dir)
 
 			if workDryRun {
-				fmt.Println(prompt)
+				fmt.Println("=== System Prompt ===")
+				fmt.Println(systemPrompt)
+				fmt.Println("\n=== User Content ===")
+				fmt.Println(userContent)
 				// Unclaim
 				picked.Assignee = ""
 				picked.Status = "ready-for-development"
@@ -95,7 +99,7 @@ Configure the work command first:
 			}
 
 			// Execute work command
-			if err := llm.RunCLIPassthrough(ctx, cfg.LLM.WorkCommand, prompt); err != nil {
+			if err := llm.RunCLIPassthrough(ctx, tool, systemPrompt, userContent, cfg.LLM.WorkArgs...); err != nil {
 				fmt.Fprintf(os.Stderr, "\nWork command failed for %s: %v\n", picked.ID, err)
 				// Revert task
 				picked.Assignee = ""

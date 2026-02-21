@@ -10,27 +10,30 @@ import (
 )
 
 func EnhanceTask(ctx context.Context, cfg *config.Config, t *task.Task, template string) (string, error) {
-	if cfg.LLM.Command == "" {
-		return "", fmt.Errorf("no LLM command configured (run: skeeter config set llm.command \"claude -p\")")
+	tool, err := cfg.ResolveTool()
+	if err != nil {
+		return "", err
 	}
 
-	prompt := buildPrompt(cfg, t.Title, t.Priority, t.Tags, t.Body, template)
-	return RunCLI(ctx, cfg.LLM.Command, prompt)
+	sys := enhanceSystemPrompt(cfg)
+	user := enhanceUserContent(t.Title, t.Priority, t.Tags, t.Body, template)
+	return RunCLI(ctx, tool, sys, user)
 }
 
 func EnhanceDraft(ctx context.Context, cfg *config.Config, title, body, template string) (string, error) {
-	if cfg.LLM.Command == "" {
-		return "", fmt.Errorf("no LLM command configured (run: skeeter config set llm.command \"claude -p\")")
+	tool, err := cfg.ResolveTool()
+	if err != nil {
+		return "", err
 	}
 
-	prompt := buildPrompt(cfg, title, "", nil, body, template)
-	return RunCLI(ctx, cfg.LLM.Command, prompt)
+	sys := enhanceSystemPrompt(cfg)
+	user := enhanceUserContent(title, "", nil, body, template)
+	return RunCLI(ctx, tool, sys, user)
 }
 
-func buildPrompt(cfg *config.Config, title, priority string, tags []string, body, template string) string {
+func enhanceSystemPrompt(cfg *config.Config) string {
 	var b strings.Builder
 
-	// System context
 	b.WriteString("You are a technical project manager helping flesh out task descriptions for a software project.\n\n")
 
 	if cfg.Project.Name != "" {
@@ -45,9 +48,14 @@ func buildPrompt(cfg *config.Config, title, priority string, tags []string, body
 	b.WriteString("- Add relevant technical context and considerations\n")
 	b.WriteString("- Keep the language clear and actionable\n")
 	b.WriteString("- Do NOT include YAML frontmatter in your output\n")
-	b.WriteString("- Output ONLY the task body (markdown content), nothing else\n\n")
+	b.WriteString("- Output ONLY the task body (markdown content), nothing else")
 
-	// Task details
+	return b.String()
+}
+
+func enhanceUserContent(title, priority string, tags []string, body, template string) string {
+	var b strings.Builder
+
 	fmt.Fprintf(&b, "Task title: %s\n", title)
 	if priority != "" {
 		fmt.Fprintf(&b, "Priority: %s\n", priority)

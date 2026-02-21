@@ -10,15 +10,19 @@ import (
 	"github.com/andybarilla/skeeter/internal/task"
 )
 
-// BuildWorkPrompt constructs the prompt sent to the LLM work command.
-// If .skeeter/prompts/work.md exists, it is used as the template with placeholder substitution.
-// Otherwise a default prompt is generated.
-func BuildWorkPrompt(cfg *config.Config, t *task.Task, skeeterDir string) string {
+// BuildWorkPrompts constructs separated system prompt and user content for the work command.
+// If .skeeter/prompts/work.md exists, it is used as user content with placeholder substitution.
+// Otherwise default prompts are generated.
+func BuildWorkPrompts(cfg *config.Config, t *task.Task, skeeterDir string) (systemPrompt, userContent string) {
+	systemPrompt = workSystemPrompt(cfg, skeeterDir)
+
 	customPath := filepath.Join(skeeterDir, "prompts", "work.md")
 	if data, err := os.ReadFile(customPath); err == nil {
-		return expandPlaceholders(string(data), cfg, t, skeeterDir)
+		userContent = expandPlaceholders(string(data), cfg, t, skeeterDir)
+	} else {
+		userContent = defaultWorkUserContent(cfg, t, skeeterDir)
 	}
-	return defaultWorkPrompt(cfg, t, skeeterDir)
+	return
 }
 
 func expandPlaceholders(tmpl string, cfg *config.Config, t *task.Task, skeeterDir string) string {
@@ -34,15 +38,21 @@ func expandPlaceholders(tmpl string, cfg *config.Config, t *task.Task, skeeterDi
 	return r.Replace(tmpl)
 }
 
-func defaultWorkPrompt(cfg *config.Config, t *task.Task, skeeterDir string) string {
+func workSystemPrompt(cfg *config.Config, skeeterDir string) string {
 	var b strings.Builder
 
-	b.WriteString("You are an autonomous coding agent. Implement the following task.\n\n")
+	b.WriteString("You are an autonomous coding agent. Implement the task provided by the user.")
 
 	if cfg.Project.Name != "" {
-		fmt.Fprintf(&b, "Project: %s\n", cfg.Project.Name)
+		fmt.Fprintf(&b, "\n\nProject: %s", cfg.Project.Name)
 	}
-	fmt.Fprintf(&b, "Skeeter directory: %s\n\n", skeeterDir)
+	fmt.Fprintf(&b, "\nSkeeter directory: %s", skeeterDir)
+
+	return b.String()
+}
+
+func defaultWorkUserContent(cfg *config.Config, t *task.Task, skeeterDir string) string {
+	var b strings.Builder
 
 	fmt.Fprintf(&b, "## Task %s: %s\n\n", t.ID, t.Title)
 

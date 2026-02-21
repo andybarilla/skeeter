@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -13,9 +14,25 @@ type ProjectConfig struct {
 	Prefix string `yaml:"prefix" json:"prefix"`
 }
 
+// LLMToolDef describes how to invoke an LLM CLI tool.
+type LLMToolDef struct {
+	Command          string `yaml:"command" json:"command"`
+	PrintFlag        string `yaml:"print_flag" json:"print_flag"`
+	SystemPromptFlag string `yaml:"system_prompt_flag" json:"system_prompt_flag"`
+}
+
+var builtinTools = map[string]LLMToolDef{
+	"claude": {
+		Command:          "claude",
+		PrintFlag:        "-p",
+		SystemPromptFlag: "--system-prompt",
+	},
+}
+
 type LLMConfig struct {
-	Command     string `yaml:"command" json:"command"`
-	WorkCommand string `yaml:"work_command,omitempty" json:"work_command"`
+	Tool     string                `yaml:"tool,omitempty" json:"tool"`
+	Tools    map[string]LLMToolDef `yaml:"tools,omitempty" json:"tools,omitempty"`
+	WorkArgs []string              `yaml:"work_args,omitempty" json:"work_args,omitempty"`
 }
 
 type Config struct {
@@ -35,7 +52,26 @@ func Default() *Config {
 		Statuses:   []string{"backlog", "ready-for-development", "in-progress", "done"},
 		Priorities: []string{"critical", "high", "medium", "low"},
 		AutoCommit: false,
+		LLM:        LLMConfig{Tool: "claude"},
 	}
+}
+
+// ResolveTool returns the LLMToolDef for the configured tool name.
+// User-defined tools (llm.tools) take precedence over builtins.
+func (c *Config) ResolveTool() (*LLMToolDef, error) {
+	name := c.LLM.Tool
+	if name == "" {
+		return nil, fmt.Errorf("no LLM tool configured (run: skeeter config set llm.tool claude)")
+	}
+	if c.LLM.Tools != nil {
+		if t, ok := c.LLM.Tools[name]; ok {
+			return &t, nil
+		}
+	}
+	if t, ok := builtinTools[name]; ok {
+		return &t, nil
+	}
+	return nil, fmt.Errorf("unknown LLM tool %q (builtin: claude)", name)
 }
 
 func Load(dir string) (*Config, error) {

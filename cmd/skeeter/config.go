@@ -28,13 +28,22 @@ var configCmd = &cobra.Command{
 		}
 
 		cfg := s.Config
-		fmt.Printf("Project:     %s\n", cfg.Project.Name)
-		fmt.Printf("Prefix:      %s\n", cfg.Project.Prefix)
-		fmt.Printf("Statuses:    %s\n", strings.Join(cfg.Statuses, " -> "))
-		fmt.Printf("Priorities:  %s\n", strings.Join(cfg.Priorities, ", "))
-		fmt.Printf("Auto-commit: %v\n", cfg.AutoCommit)
-		fmt.Printf("LLM command: %s\n", cfg.LLM.Command)
-		fmt.Printf("LLM work cmd: %s\n", cfg.LLM.WorkCommand)
+		fmt.Printf("Project:       %s\n", cfg.Project.Name)
+		fmt.Printf("Prefix:        %s\n", cfg.Project.Prefix)
+		fmt.Printf("Statuses:      %s\n", strings.Join(cfg.Statuses, " -> "))
+		fmt.Printf("Priorities:    %s\n", strings.Join(cfg.Priorities, ", "))
+		fmt.Printf("Auto-commit:   %v\n", cfg.AutoCommit)
+		fmt.Printf("LLM tool:      %s\n", cfg.LLM.Tool)
+		if len(cfg.LLM.WorkArgs) > 0 {
+			fmt.Printf("LLM work args: %s\n", strings.Join(cfg.LLM.WorkArgs, " "))
+		}
+		if len(cfg.LLM.Tools) > 0 {
+			var names []string
+			for k := range cfg.LLM.Tools {
+				names = append(names, k)
+			}
+			fmt.Printf("LLM custom:    %s\n", strings.Join(names, ", "))
+		}
 		return nil
 	},
 }
@@ -48,8 +57,8 @@ var configSetCmd = &cobra.Command{
   statuses          Comma-separated status list (ordered as workflow)
   priorities        Comma-separated priority list (highest first)
   auto_commit       Enable auto-commit (true/false)
-  llm.command       LLM CLI command (e.g., "claude -p", "aichat -S", "llm")
-  llm.work_command  LLM CLI command for skeeter work (e.g., "claude -p --dangerously-skip-permissions")`,
+  llm.tool          LLM tool name (builtin: claude)
+  llm.work_args     Comma-separated extra args for skeeter work (e.g., "--dangerously-skip-permissions")`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if remoteFlag != "" {
@@ -100,12 +109,19 @@ var configSetCmd = &cobra.Command{
 			default:
 				return fmt.Errorf("invalid value %q for auto_commit (use true/false)", value)
 			}
-		case "llm.command":
-			s.Config.LLM.Command = value
-		case "llm.work_command":
-			s.Config.LLM.WorkCommand = value
+		case "llm.tool":
+			s.Config.LLM.Tool = value
+		case "llm.work_args":
+			var workArgs []string
+			for _, a := range strings.Split(value, ",") {
+				trimmed := strings.TrimSpace(a)
+				if trimmed != "" {
+					workArgs = append(workArgs, trimmed)
+				}
+			}
+			s.Config.LLM.WorkArgs = workArgs
 		default:
-			return fmt.Errorf("unknown config key %q (valid: name, prefix, statuses, priorities, auto_commit, llm.command, llm.work_command)", key)
+			return fmt.Errorf("unknown config key %q (valid: name, prefix, statuses, priorities, auto_commit, llm.tool, llm.work_args)", key)
 		}
 
 		if err := s.Config.Save(dir); err != nil {
