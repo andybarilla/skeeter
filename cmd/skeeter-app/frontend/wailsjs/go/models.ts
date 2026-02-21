@@ -1,5 +1,19 @@
 export namespace config {
 	
+	export class LLMConfig {
+	    command: string;
+	    work_command: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new LLMConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.command = source["command"];
+	        this.work_command = source["work_command"];
+	    }
+	}
 	export class ProjectConfig {
 	    name: string;
 	    prefix: string;
@@ -19,6 +33,7 @@ export namespace config {
 	    statuses: string[];
 	    priorities: string[];
 	    auto_commit: boolean;
+	    llm: LLMConfig;
 	
 	    static createFrom(source: any = {}) {
 	        return new Config(source);
@@ -30,6 +45,7 @@ export namespace config {
 	        this.statuses = source["statuses"];
 	        this.priorities = source["priorities"];
 	        this.auto_commit = source["auto_commit"];
+	        this.llm = this.convertValues(source["llm"], LLMConfig);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -50,6 +66,7 @@ export namespace config {
 		    return a;
 		}
 	}
+	
 
 }
 

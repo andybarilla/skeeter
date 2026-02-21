@@ -18,6 +18,14 @@ export function CreateTask(arg1) {
   return window['go']['main']['App']['CreateTask'](arg1);
 }
 
+export function EnhanceDraft(arg1, arg2) {
+  return window['go']['main']['App']['EnhanceDraft'](arg1, arg2);
+}
+
+export function EnhanceTask(arg1) {
+  return window['go']['main']['App']['EnhanceTask'](arg1);
+}
+
 export function GetActiveRepoName() {
   return window['go']['main']['App']['GetActiveRepoName']();
 }

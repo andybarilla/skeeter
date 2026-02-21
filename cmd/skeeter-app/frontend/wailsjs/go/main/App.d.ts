@@ -11,6 +11,10 @@ export function BrowseDirectory():Promise<string>;
 
 export function CreateTask(arg1:main.CreateTaskInput):Promise<task.Task>;
 
+export function EnhanceDraft(arg1:string,arg2:string):Promise<string>;
+
+export function EnhanceTask(arg1:string):Promise<string>;
+
 export function GetActiveRepoName():Promise<string>;
 
 export function GetBoard(arg1:main.BoardFilter):Promise<main.BoardData>;
